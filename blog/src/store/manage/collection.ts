@@ -5,19 +5,7 @@ import { LibraryEnum } from '@/enums'
 import { TreeOption } from 'naive-ui'
 import { manageApi } from '@/api'
 
-// export enum SortType {
-//   UPDATE = 'update',
-//   UPDATE_REVERSE = 'update_reverse',
-//   CREATE = 'create',
-//   CREATE_REVERSE = 'create_reverse',
-//   NAME = 'name',
-//   NAME_REVERSE = 'name_reverse'
-// }
-// export enum CollectionType {
-//   NOTE = 'note',
-//   COURSE = 'course'
-// }
-export interface article {
+interface article {
   id: string
   penname: string
   title: string

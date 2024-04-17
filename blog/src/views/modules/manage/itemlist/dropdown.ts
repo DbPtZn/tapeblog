@@ -1,14 +1,109 @@
 import { DpzIcon } from '@/components'
 // import useStore, { any, any, any } from "@/store"
-import { Ref, nextTick, ref, h } from 'vue'
+import { Ref, nextTick, ref, h, reactive, computed, Component } from 'vue'
 import * as UUID from 'uuid'
 import { LibraryEnum, MaterialTypeEnum } from '@/enums'
-import { NInput, NTree, useDialog, useMessage } from 'naive-ui'
+import { NIcon, NInput, NTree, useDialog, useMessage } from 'naive-ui'
 import { DialogApiInjection } from 'naive-ui/es/dialog/src/DialogProvider'
-import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
+import { DropdownOption } from 'naive-ui'
 import { MessageApiInjection } from 'naive-ui/es/message/src/MessageProvider'
 import SelectCollectionForm from '../form/SelectCollectionForm.vue'
-import useStore from '@/store'
+import useStore, { useManageStore } from '@/store'
+import { DriveFileMoveRtlFilled } from '@vicons/material'
+import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
+type article = ReturnType<typeof useManageStore>['collectionStore']['subfiles'][0]
+export function useListDropDown () {
+  const dialog = useDialog()
+  const message = useMessage()
+  const dropdownState = reactive({
+    lib: ref<LibraryEnum>(),
+    type: ref<'file' | 'folder' | 'list'>(),
+    target: ref<article>(),
+    xRef: ref<number>(0),
+    yRef: ref<number>(0),
+    showDropdownRef: ref<boolean>(false),
+    showArrowRef: ref<boolean>(false),
+    placementRef: ref<'bottom' | 'bottom-start'>('bottom-start')
+  })
+    
+  const renderIcon = (component: Component) => {
+    return h(NIcon, { component: component, size: 24 })
+  }
+  const options = computed(() => {
+    const { collectionsDataStore, productStore, collectionStore } = useStore('manage')
+    return [
+      // 新建
+      {
+        label: '分配',
+        icon: renderIcon(DriveFileMoveRtlFilled),
+        key: 'distribution',
+        content: () => 
+          h(SelectCollectionForm, {
+            data: collectionsDataStore.data.map(item => {
+              return { id: item.id, label: item.name }
+            }),
+            submit: res => {
+              if (!res.collectionId || !dropdownState.target) return
+              // const isPublish = collectionsDataStore.data[collectionsDataStore.data.findIndex(item => item.id === res.collectionId)].isPublish
+              const target = dropdownState.target
+              productStore
+                .allocation({
+                  id: target.id,
+                  collectionId: res.collectionId,
+                  isPublish: target.isPublish
+                })
+                .then(res => {
+                  collectionStore.removeSubfileById(target.id)
+                  dialog.destroyAll()
+                })
+                .catch(err => console.log(err))
+            }
+          })
+      }
+    ]
+  })
+
+  function handleContextmenu(ev: MouseEvent, type: 'folder' | 'file' | 'list') {
+    dropdownState.type = type
+    ev.preventDefault()
+    ev.stopPropagation()
+    dropdownState.showDropdownRef = false
+    nextTick().then(() => {
+      dropdownState.showDropdownRef = true
+      dropdownState.xRef = ev.clientX
+      dropdownState.yRef = ev.clientY
+      dropdownState.showArrowRef = false
+      // dropdownState.placementRef = 'bottom-start'
+    })
+  }
+  function handleMoreAction(ev: MouseEvent, type: 'folder' | 'file') {
+    dropdownState.type = type
+    ev.preventDefault()
+    ev.stopPropagation()
+    dropdownState.showDropdownRef = false
+    const el = ev.target as HTMLElement
+    const rect = el.getBoundingClientRect()
+    nextTick().then(() => {
+      dropdownState.showDropdownRef = true
+      dropdownState.xRef = rect.x + 9
+      dropdownState.yRef = rect.y + 15
+      dropdownState.showArrowRef = true
+      // dropdownState.placementRef = 'bottom'
+    })
+  }
+  
+  function handleClickoutside() {
+    dropdownState.showDropdownRef = false
+  }
+
+  return {
+    dropdownState,
+    handleClickoutside,
+    handleContextmenu,
+    handleMoreAction
+  }
+}
+
 
 export class ItemListDropDown {
   private xRef: Ref<number>
