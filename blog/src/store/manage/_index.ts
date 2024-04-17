@@ -2,6 +2,7 @@ import { useAuthcodeStore } from './authcode'
 import { useCollectionStore } from './collection'
 import { useCollectionsDataStore } from './collections-data'
 import { useProductStore } from './product'
+import { useSettingStore } from './setting'
 import { useUserStore } from './user'
 
 // import {
@@ -18,7 +19,8 @@ export const useManageStore = () => ({
   collectionsDataStore: useCollectionsDataStore(),
   collectionStore: useCollectionStore(),
   productStore: useProductStore(),
-  authcodeStore: useAuthcodeStore()
+  authcodeStore: useAuthcodeStore(),
+  settingStore: useSettingStore()
 })
 
 export * from './_types'

@@ -61,7 +61,7 @@ function handleSubmit(e: MouseEvent) {
         <!-- <n-checkbox v-model:checked="model.isPublish">立即发布</n-checkbox> -->
         <!-- </n-form-item> -->
       </n-form>
-      <n-button class="confirm" @click="handleSubmit">创建</n-button>
+      <n-button class="confirm" @click="handleSubmit">确认</n-button>
     </n-space>
   </div>
 </template>

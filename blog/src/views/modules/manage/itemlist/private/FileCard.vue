@@ -2,7 +2,7 @@
 import { NButton, useThemeVars } from 'naive-ui'
 import { MaterialTypeEnum } from '@/enums'
 import { PropType } from 'vue'
-import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
+import { MoreVertRound } from '@vicons/material'
 const themeVars = useThemeVars()
 const props = defineProps({
   /** 笔记 id */
@@ -25,17 +25,18 @@ const props = defineProps({
     type: [String, Number],
     default: ''
   },
-  dropdownOptions: {
-    type: Array as PropType<DropdownMixedOption[]>,
-    require: true,
-    default: () => []
-  },
   /** 卡片聚焦状态  */
   active: {
     type: Boolean,
     defalut: false
   }
 })
+const emits = defineEmits<{
+  onMoreAction: [ ev: MouseEvent ]
+}>()
+function handleMoreAction(ev) {
+  emits('onMoreAction', ev)
+}
 </script>
 
 <template>
@@ -45,11 +46,9 @@ const props = defineProps({
       <n-text class="header-title" :depth="2"> {{ title }} </n-text>
     </template>
     <template #header-extra>
-      <n-dropdown :options="dropdownOptions" :trigger="'click'" :show-arrow="true">
-        <n-button text class="header-icon" @click.prevent.stop="''">
-          <DpzIcon :icon="`${MaterialTypeEnum.FILLED}more_vert`" size="18" />
-        </n-button>
-      </n-dropdown>
+      <n-button text class="header-icon" @click.prevent.stop="handleMoreAction">
+        <n-icon :component="MoreVertRound" size="22" />
+      </n-button>
     </template>
     <template #default>
       <n-text class="content" :depth="3"> {{ abbrev }} </n-text>

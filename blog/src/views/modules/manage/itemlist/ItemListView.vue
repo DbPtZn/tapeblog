@@ -7,12 +7,14 @@ import useStore, { SortType } from '@/store'
 import utils from '@/utils'
 import { ManagerShell } from '../shell'
 import { useShell } from '@/renderer'
-import { ItemListDropDown } from './dropdown'
+import { useListDropDown } from './hooks/useDropdown'
 import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
+import ItemListContainer from './ItemListContainer.vue'
 import * as UUID from 'uuid'
 const shell = useShell<ManagerShell>()
 const themeVars = useThemeVars()
-const dropdown = new ItemListDropDown()
+// const dropdown = new ItemListDropDown()
+
 const value = ref()
 const listRef = ref<HTMLElement>()
 const { collectionStore, productStore } = useStore('manage')
@@ -90,12 +92,12 @@ function generateHeaderBtnOptions (): DropdownMixedOption[] {
     }
   ]
 }
-function generateCardOptions (id: string, isPublish: boolean): DropdownMixedOption[] {
-  if (collectionStore.id === 'unfiled') {
-    return dropdown.getUnfiledDropdownOptions(id)
-  }
-  return dropdown.getFileDropdownOptions(id, isPublish)
-}
+// function generateCardOptions (id: string, isPublish: boolean): DropdownMixedOption[] {
+//   if (collectionStore.id === 'unfiled') {
+//     return dropdown.getUnfiledDropdownOptions(id)
+//   }
+//   return dropdown.getFileDropdownOptions(id, isPublish)
+// }
 function handleToFile(id: string, isParsed: boolean) {
   console.log(isParsed)
   shell.useWorkbench()
@@ -110,8 +112,10 @@ const dragMethods = {
     // console.log(ev)
   }
 }
+const { dropdownState, options, handleClickoutside, handleContextmenu, handleMoreAction, handleSelect } = useListDropDown()
 </script>
 <template>
+  <ItemListContainer>
   <div class="itemlist" @mouseover="collapseVisible = true" @mouseleave="collapseVisible = false">
     <Header class="header">
       <n-page-header subtitle="" @back="handleBack">
@@ -132,8 +136,8 @@ const dragMethods = {
         </template>
       </n-page-header>
     </Header>
-    <Main class="main" :flex="1">
-      <div ref="listRef" class="list" @contextmenu="dropdown.handleContextmenu">
+    <div ref="scrollerRef" class="main">
+      <div ref="listRef" class="list">
         <FileCard
           v-for="item in collectionStore.subfiles"
           :id="item.id"
@@ -142,31 +146,29 @@ const dragMethods = {
           :date="utils.dateFormat2(new Date(item.updateAt))"
           :key="item.id"
           :active="shell.workbench.itemId === item.id"
-          :dropdown-options="generateCardOptions(item.id, item.isPublish)"
-          @click="handleToFile(item.id, item.isParsed)"
           draggable="true"
           @dragstart="dragMethods.handleDragStart($event, item.id)"
           @dragend="dragMethods.handleDragEnd"
+          @click="handleToFile(item.id, item.isParsed)"
+          @on-more-action="handleMoreAction($event, item)"
+          @contextmenu="handleContextmenu($event, item)"
         />
       </div>
-    </Main>
-    <!-- 折叠按钮 -->
-    <CollapseButton 
-      v-if="collapseVisible || settingStore.isItemListCollapse" 
-      :is-collapse="settingStore.isItemListCollapse" 
-      @click="handleCollapseItemlist" 
-    />
+    </div>
   </div>
+</ItemListContainer>
   <!-- 右击下拉列表 -->
   <n-dropdown
-      placement="bottom-start"
-      trigger="manual"
-      :x="dropdown.getDropDownX()"
-      :y="dropdown.getDropDownY()"
-      :options="dropdown.getContextmenuDropdownOptions()"
-      :show="dropdown.getShowDropdown()"
-      @clickoutside="dropdown.handleHideDropdown()"
-    />
+    trigger="manual"
+    :placement="dropdownState.placementRef"
+    :show-arrow="dropdownState.showArrowRef"
+    :x="dropdownState.xRef"
+    :y="dropdownState.yRef"
+    :options="options"
+    :show="dropdownState.showDropdownRef"
+    @select="handleSelect"
+    @clickoutside="handleClickoutside"
+  />
 </template>
 
 <style lang="scss" scoped>
@@ -178,12 +180,14 @@ const dragMethods = {
   // border-bottom: 1px solid v-bind('themeVars.dividerColor');
 }
 .main {
+  flex: 1;
   width: 100%;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px 12px;
+  box-sizing: border-box;
   .list {
     height: 100%;
     width: 100%;
