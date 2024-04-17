@@ -1,0 +1,30 @@
+/** 查询到类包含该前缀时，就会添加以下样式 */
+[class^="css-icon-"], [class*=" css-icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  transition: all 0.4s ease;
+}
+
+[class^="css-icon-"], [class*=" css-icon-"]:before {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  transition: all 0.4s ease;
+}
+
+[class^="css-icon-"], [class*=" css-icon-"]::after {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  transition: all 0.4s ease;
+}
+
+[class^="css-icon-"], [class*=" css-icon-"] i {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  transition: all 0.4s ease;
+}
+
+[class^="css-icon-"], [class*=" css-icon-"] i:before {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  transition: all 0.4s ease;
+}
+
+[class^="css-icon-"], [class*=" css-icon-"] i:after {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  transition: all 0.4s ease;
+}
