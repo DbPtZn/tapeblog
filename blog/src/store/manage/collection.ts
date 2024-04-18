@@ -4,13 +4,13 @@ import _ from 'lodash'
 import { LibraryEnum } from '@/enums'
 import { TreeOption } from 'naive-ui'
 import { manageApi } from '@/api'
-
-interface article {
+import { SortType } from './_types'
+interface Article {
   id: string
   penname: string
   title: string
   abbrev: string
-  type: string
+  type: 'note' | 'course'
   isPublish: boolean
   isParsed: boolean
   collectionId: string
@@ -25,10 +25,10 @@ interface CollectionState {
   name: string
   createAt: string
   updateAt: string
-  subfiles: article[]
+  subfiles: Article[]
 }
 
-export const useCollectionStore = defineStore('collectionStore', {
+export const useCollectionStore = defineStore('collectionManageStore', {
   state(): CollectionState {
     return {
       id: '',
@@ -45,7 +45,7 @@ export const useCollectionStore = defineStore('collectionStore', {
       })
     },
     set(data: CollectionState) {
-      console.log(data)
+      // console.log(data)
       this.$state = data
     },
     fetch(id: string) {
@@ -64,9 +64,51 @@ export const useCollectionStore = defineStore('collectionStore', {
       })
     },
     removeSubfileById(id: string) {
-      const files = this.subfiles?.splice(this.subfiles.findIndex(item => item.id === id), 1)
-      console.log(this.subfiles)
+      const files = this.subfiles?.splice(
+        this.subfiles.findIndex(item => item.id === id),
+        1
+      )
+      // console.log(this.subfiles)
       return files && files[0]
     },
+    getSubfiles(sortType?: SortType) {
+      switch (sortType) {
+        case SortType.UPDATE:
+          return this.getSubfilesSortUpdateAt
+        case SortType.NAME:
+          return this.getSubfilesSortByName
+        case SortType.CREATE:
+          return this.getSubfilesSortByCreateAt
+        case SortType.UPDATE_REVERSE:
+          return this.getSubfilesSortUpdateAtReverse
+        case SortType.NAME_REVERSE:
+          return this.getSubfilesSortByNameReverse
+        case SortType.CREATE_REVERSE:
+          return this.getSubfilesSortByCreateAtReverse
+        default:
+          return this.getSubfilesSortUpdateAt
+      }
+    },
+  },
+  getters: {
+    getSubfilesSortByName(): Article[] {
+      return this.subfiles ? _.sortBy(this.subfiles, item => item.title) : []
+    },
+    getSubfilesSortUpdateAt(): Article[] {
+      return this.subfiles ? _.sortBy(this.subfiles, item => new Date(item.updateAt)) : []
+    },
+    getSubfilesSortByCreateAt(): Article[] {
+      return this.subfiles ? _.sortBy(this.subfiles, item => new Date(item.createAt)) : []
+    },
+    // reverse
+    getSubfilesSortByNameReverse(): Article[] {
+      return this.subfiles ? _.sortBy(this.subfiles, item => item.title).reverse() : []
+    },
+    getSubfilesSortUpdateAtReverse(): Article[] {
+      return this.subfiles ? _.sortBy(this.subfiles, item => new Date(item.updateAt)).reverse() : []
+    },
+    getSubfilesSortByCreateAtReverse(): Article[] {
+      return this.subfiles ? _.sortBy(this.subfiles, item => new Date(item.createAt)).reverse() : []
+    }
   }
 })

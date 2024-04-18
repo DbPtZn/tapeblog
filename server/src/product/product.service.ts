@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { CreateProductDto } from './dto/create-product.dto'
-import { UpdateProductDto } from './dto/update-product.dto'
+import { UpdateProductDto, UpdateTitleDto } from './dto/update-product.dto'
 import { Product } from './entities/product.entity'
 import { InjectRepository } from '@nestjs/typeorm'
 import { MongoRepository } from 'typeorm'
@@ -206,13 +206,28 @@ export class ProductService {
     else return false
   }
 
-  // update(id: number, updateProductDto: UpdateProductDto) {
-  //   return `This action updates a #${id} product`
-  // }
+  async publish(_id: ObjectId, userId: ObjectId) {
+    const product = await this.productsRepository.findOneBy({ _id, userId })
+    product.isPublish = !product.isPublish
+    return this.productsRepository.save(product)
+  }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} product`
-  // }
+  async updateTitle(updateProductTitleDto: UpdateTitleDto, userId: ObjectId) {
+    const { id, title } = updateProductTitleDto
+    const product = await this.productsRepository.findOneBy({ _id: new ObjectId(id), userId })
+    product.title = title
+    const newproduct = await this.productsRepository.save(product)
+    if (newproduct) return { updateAt: newproduct.updateAt, msg: '标题更新成功！' }
+    else throw new Error(`标题更新失败,项目于id:${id},当前标题:${title}`)
+  }
+
+  async remove(_id: ObjectId, userId: ObjectId) {
+    const product = await this.productsRepository.findOneBy({ _id, userId })
+    product.removed = RemovedEnum.ACTIVE
+    const newproduct = await this.productsRepository.save(product)
+    if (newproduct) return { updateAt: newproduct.updateAt, msg: '移除项目成功！' }
+    else throw new Error(`移除项目失败！项目id: ${_id.toHexString()}`)
+  }
 
   async count(collectionId: ObjectId) {
     const num = await this.productsRepository.count({ collectionId, removed: RemovedEnum.NEVER, isPublish: true })

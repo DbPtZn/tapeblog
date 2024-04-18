@@ -1,31 +1,29 @@
 <script lang="ts" setup>
 import { AuthCode, DpzIcon } from '@/components'
 import { MaterialTypeEnum } from '@/enums'
-import { NButton, useDialog, useThemeVars } from 'naive-ui'
+import { NButton, NIcon, NInput, useDialog, useMessage, useThemeVars } from 'naive-ui'
 import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
 import { h, ref } from 'vue'
 import { CollapseButton } from './private'
 import Draggable from 'vuedraggable'
 import CollectionItem from './private/CollectionItem.vue'
-import useStore from '@/store'
+import useStore, { useManageStore } from '@/store'
 import * as UUID from 'uuid'
 import CreateCollectionForm from '../form/CreateCollectionForm.vue'
+import SidebarContainer from './SidebarContainer.vue'
 import { onMounted } from 'vue'
 import { ManagerShell } from '@/views'
 import { useShell } from '@/renderer'
+import { DriveFileRenameOutlineFilled } from '@vicons/material'
+type Collection = ReturnType<typeof useManageStore>['collectionsDataStore']['data'][0]
 const { collectionsDataStore, collectionStore, productStore } = useStore('manage')
-const { settingStore } = useStore()
 const shell = useShell<ManagerShell>()
 const themeVars = useThemeVars()
 const dialog = useDialog()
+const message = useMessage()
 onMounted(() => {
   collectionsDataStore.fetchAndSet()
 })
-/** 侧边栏折叠/展开 */
-const collapseVisible = ref(false) /** 控制容器展开/折叠按钮显示 */
-function handleCollapseSidebar() {
-  settingStore.isSidebarCollapse ? shell.expandSidebar() : shell.collapseSidebar()
-}
 /** 折叠面板 */
 const expandedNames = ref<any[]>(['1'])
 function handleExpandedNamesChange(args: Array<any>) {
@@ -48,7 +46,7 @@ const collectionMethods = {
         h(CreateCollectionForm, {
           submit(res) {
             // 新建合辑
-            collectionStore.create({ label: res.label }).then(res => {
+            collectionStore.create({ name: res.name }).then(res => {
               collectionsDataStore.fetchAndSet()
             })
             dialog.destroyAll()
@@ -64,14 +62,14 @@ const collectionMethods = {
     shell.useAuthManage()
   },
   /** 生成下拉列表选项 */
-  generateOptions: (isPublish: boolean): DropdownMixedOption[] => {
+  generateOptions: (collection: Collection): DropdownMixedOption[] => {
     return [
       {
-        label: `${isPublish ? '设为私密' : '设为公开'}`,
-        key: UUID.v4(),
+        label: `${collection.isPublish ? '设为私密' : '设为公开'}`,
+        key: 'publish',
         props: {
           onClick: () => {
-            console.log('45')
+            collectionsDataStore.publish(collection.id)
           }
         }
       },
@@ -81,28 +79,59 @@ const collectionMethods = {
       },
       {
         label: '设置',
-        key: UUID.v4(),
+        key: 'settings',
+        disabled: true,
         props: {
           onClick: () => {
-            console.log('45')
+            //
           }
         }
       },
       {
         label: '重命名',
-        key: UUID.v4(),
+        key: 'rename',
         props: {
           onClick: () => {
-            console.log('45')
+            const newname = ref(collection.name)
+            dialog.create({
+              icon: () => h(NIcon, { component: DriveFileRenameOutlineFilled, size: 24 }),
+              title: '文件夹重命名',
+              content: () =>
+                h(NInput, {
+                  type: 'text',
+                  placeholder: '输入新名称',
+                  maxlength: 32,
+                  showCount: true,
+                  value: newname.value,
+                  onInput: value => {
+                    newname.value = value
+                  }
+                }),
+              positiveText: '确定',
+              negativeText: '取消',
+              maskClosable: true,
+              onPositiveClick: () => {
+                if (newname.value === collection.name) return
+                if (newname.value === '') message.error('合辑名称不能为空！')
+                if (newname.value && collection.id) {
+                  collectionsDataStore.rename(collection.id, newname.value).then(() => {
+                    collection.name = newname.value
+                    if (collectionStore.id === collection.id) {
+                      collectionStore.name = newname.value
+                    }
+                  })
+                }
+              }
+            })
           }
         }
       },
       {
         label: '移除',
-        key: UUID.v4(),
+        key: 'remove',
         props: {
           onClick: () => {
-            console.log('45')
+            collectionsDataStore.remove(collection.id)
           }
         }
       }
@@ -115,7 +144,7 @@ const dropMethods = {
   handleDrop(ev: DragEvent, collectionId: string, isPublish: boolean) {
     const fileId = ev.dataTransfer?.getData('id')
     if (!fileId) return
-    console.log([fileId, collectionId])
+    // console.log([fileId, collectionId])
     productStore
       .allocation({
         id: fileId,
@@ -133,8 +162,8 @@ const dropMethods = {
 }
 </script>
 <template>
-  <div class="sidebar" @mouseover="collapseVisible = true" @mouseleave="collapseVisible = false">
-    <Main class="main" :flex="1">
+  <SidebarContainer>
+    <div class="main" :flex="1">
       <n-space class="wrapper" :vertical="true" size="large">
         <n-space class="btn-group" :vertical="true" size="large">
           <n-button class="collapse-item-btn" size="large" quaternary block @click="collectionMethods.handleToAuthManage">
@@ -192,7 +221,7 @@ const dropMethods = {
                 <CollectionItem
                   :key="element.id"
                   :item="element"
-                  :dropdown-options="collectionMethods.generateOptions(element.isPublish)"
+                  :dropdown-options="collectionMethods.generateOptions(element)"
                   @dragenter.prevent="dropMethods.handleDragEnter"
                   @dragover.prevent="dropMethods.handleDragOver"
                   @dragleave.prevent="dropMethods.handleDragLeave"
@@ -220,14 +249,8 @@ const dropMethods = {
           </n-collapse-item>
         </n-collapse>
       </n-space>
-    </Main>
-    <!-- 展开/折叠按钮 -->
-    <CollapseButton
-      v-if="collapseVisible || settingStore.isSidebarCollapse"
-      :is-collapse="settingStore.isSidebarCollapse"
-      @click="handleCollapseSidebar"
-    />
-  </div>
+    </div>
+  </SidebarContainer>
 </template>
 
 <style lang="scss" scoped>
@@ -246,18 +269,20 @@ const dropMethods = {
   overflow: hidden;
   box-sizing: border-box;
   border-right: 1px solid v-bind('themeVars.borderColor');
-  .main {
+}
+.main {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 18px 6px 0px 12px;
+  box-sizing: border-box;
+  .wrapper {
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 18px 6px 0px 12px;
-    .wrapper {
-      width: 100%;
-      .btn-group {
-        margin-bottom: 12px;
-      }
+    .btn-group {
+      margin-bottom: 12px;
     }
   }
 }

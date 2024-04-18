@@ -5,14 +5,11 @@ import { size } from 'lodash'
 import { MenuOption, useThemeVars } from 'naive-ui'
 import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
 import { defineComponent, h, ref, Component } from 'vue'
-interface CollectItemData {
-  id: string
-  name: string
-  icon?: string
-  onClick?: () => void
-}
+import { DragIndicatorFilled, MenuBookRound, BookRound, BookOutlined } from '@vicons/material'
+import { useManageStore } from '@/store'
+type Collection = ReturnType<typeof useManageStore>['collectionsDataStore']['data'][0]
 defineProps<{
-  item: CollectItemData
+  item: Collection
   dropdownOptions?: DropdownMixedOption[]
 }>()
 const themeVar = useThemeVars()
@@ -20,15 +17,17 @@ const themeVar = useThemeVars()
 <template>
   <n-button class="collection-item" quaternary>
     <div class="prefix move">
-      <DpzIcon :icon="item.icon || `${MaterialTypeEnum.FILLED}drag_indicator`" :size="24" />
+      <n-icon :component="DragIndicatorFilled" :size="24" />
     </div>
     <div class="icon">
-      <DpzIcon :icon="item.icon || `${MaterialTypeEnum.OUTLINED}book`" :size="24" />
+      <n-icon :component="item.isPublish ? MenuBookRound : BookOutlined" :size="24" />
     </div>
-    <div class="label">{{ item.name }}</div>
+    <div class="label">
+      <div class="txt">{{ item.name }}</div>
+    </div>
     <div class="menu">
-      <n-dropdown trigger="click" :options="dropdownOptions" >
-        <n-button text type="tertiary">
+      <n-dropdown trigger="click" :options="dropdownOptions">
+        <n-button text type="tertiary" @click.stop.prevent=";">
           <DpzIcon class="menu-icon" :icon="`${MaterialTypeEnum.FILLED}more_horiz`" :size="24" />
         </n-button>
       </n-dropdown>
@@ -78,7 +77,14 @@ const themeVar = useThemeVars()
     flex: 1;
     display: flex;
     align-items: center;
+    overflow: hidden;
     padding: 0 6px;
+    .txt {
+      margin-top: 2px;
+      line-height: 38px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
   .menu {
     height: 100%;

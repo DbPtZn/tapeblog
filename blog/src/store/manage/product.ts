@@ -124,24 +124,33 @@ export const useProductStore = defineStore('productStore', {
     allocation(dto: Parameters<typeof manageApi.product.allocation>[0]) {
       return manageApi.product.allocation(dto)
     },
+    publish(id: string) {
+      return manageApi.product.publish<boolean>(id)
+    },
+    updateTitle(id: string, newTitle: string) {
+      return manageApi.product.updateTitle({ id, title: newTitle }).then(res => {
+        const index = this.data.findIndex(i => i.id === id)
+        if (index !== -1) this.data[index].title = newTitle
+      })
+    },
     revoke(id: string) {
       return manageApi.product.revoke(id)
     },
-    remove(productId: string) {
-      // return manageApi.Product.remove(ProductId)
+    remove(id: string) {
+      return manageApi.product.remove(id)
     },
-    restore(productId: string) {
-      // return manageApi.Product.restore(ProductId)
+    restore(id: string) {
+      return manageApi.product.restore(id)
     },
-    delete(productId: string) {
-      // return manageApi.Product.delete(ProductId)
+    delete(id: string) {
+      return manageApi.product.delete(id)
     },
-    move(productId: string, folderId: string) {
-      // return manageApi.Product.move(ProductId, folderId)
-    },
-    copy(productId: string, folderId: string) {
-      // return manageApi.Product.copy(ProductId, folderId)
-    }
+    // move(id: string, folderId: string) {
+    //   // return manageApi.product.move(id, folderId)
+    // },
+    // copy(id: string, folderId: string) {
+    //   // return manageApi.product.copy(id, folderId)
+    // }
   }
 })
 

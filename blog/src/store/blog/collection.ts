@@ -34,7 +34,7 @@ interface CollectionState {
   subfiles: Product[]
 }
 
-export const useCollectionStore = defineStore('collectionStore', {
+export const useCollectionStore = defineStore('collectionBlogStore', {
   state(): CollectionState {
     return {
       id: '',

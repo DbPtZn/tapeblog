@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res, UseGuards } from '@nestjs/common'
 import { ProductService } from './product.service'
 import { CreateProductDto } from './dto/create-product.dto'
-import { UpdateProductDto } from './dto/update-product.dto'
+import { UpdateProductDto, UpdateTitleDto } from './dto/update-product.dto'
 import { ApiService } from 'src/api/api.service'
 import { REST } from 'src/enum'
 import { ObjectId } from 'mongodb'
@@ -74,7 +74,7 @@ export class ProductController {
 
   @UseGuards(AuthGuard('jwt'))
   @Patch(`${REST.U}/revoke/:id`)
-  update(@Param('id') id: string, @Req() req, @Res() res) {
+  revoke(@Param('id') id: string, @Req() req, @Res() res) {
     try {
       this.productService
         .revoke(new ObjectId(id), req.user._id)
@@ -123,15 +123,38 @@ export class ProductController {
     }
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-  //   return this.productService.update(+id, updateProductDto)
-  // }
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(`${REST.U}/publish/:id`)
+  async publish(@Param('id') id: string, @Req() req, @Res() res) {
+    try {
+      const result = await this.productService.publish(new ObjectId(id), req.user._id)
+      res.status(200).send(result.isPublish)
+    } catch (error) {
+      res.status(400).send(error.message)
+    }
+  }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.productService.remove(+id)
-  // }
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(`${REST.U}/title`)
+  async updateTitle(@Body() updateTitleDto: UpdateTitleDto, @Req() req, @Res() res) {
+    try {
+      const result = await this.productService.updateTitle(updateTitleDto, req.user._id)
+      res.status(200).send(result)
+    } catch (error) {
+      res.status(400).send(error.message)
+    }
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(`${REST.U}/remove/:id`)
+  async remove(@Param('id') id: string, @Req() req, @Res() res) {
+    try {
+      const result = await this.productService.remove(new ObjectId(id), req.user._id)
+      res.status(200).send(result)
+    } catch (error) {
+      res.status(400).send(error.message)
+    }
+  }
 
   /** ----------------------- 博客前端的服务 ------------------------- */
   // @Get(`${REST.R}/:UID`)

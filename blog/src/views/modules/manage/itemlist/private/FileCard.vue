@@ -2,35 +2,22 @@
 import { NButton, useThemeVars } from 'naive-ui'
 import { MaterialTypeEnum } from '@/enums'
 import { PropType } from 'vue'
-import { MoreVertRound } from '@vicons/material'
+import { MoreVertRound, PublicFilled, BookOutlined, PlayLessonOutlined } from '@vicons/material'
 const themeVars = useThemeVars()
-const props = defineProps({
-  /** 笔记 id */
-  id: {
-    type: String,
-    require: false
-  },
-  /** 笔记 title */
-  title: {
-    type: String,
-    default: ''
-  },
-  /** 笔记缩略 */
-  abbrev: {
-    type: String,
-    default: ''
-  },
-  /** 笔记最近更新时间 */
-  date: {
-    type: [String, Number],
-    default: ''
-  },
+const props = defineProps<{
+  /** id */
+  id: string,
+  type?: 'note' | 'course'
+  /** title */
+  title: string,
+  /** 缩略 */
+  abbrev: string,
+  /** 最近更新时间 */
+  date: string | number,
+  isPublish: boolean,
   /** 卡片聚焦状态  */
-  active: {
-    type: Boolean,
-    defalut: false
-  }
-})
+  active: boolean
+}>()
 const emits = defineEmits<{
   onMoreAction: [ ev: MouseEvent ]
 }>()
@@ -43,7 +30,10 @@ function handleMoreAction(ev) {
   <!-- 注意：这里不可以再裹一层 div，会破坏 css 的选择器逻辑 -->
   <n-card :class="['file-card', props.active && 'active']" size="small" :bordered="false">
     <template #header>
-      <n-text class="header-title" :depth="2"> {{ title }} </n-text>
+      <div class="header">
+        <n-icon :style="{ marginRight: '4px' }" :component="type === 'note' ? BookOutlined : PlayLessonOutlined" size="22" />
+        <n-text class="header-title" :depth="2"> {{ title }} </n-text>
+      </div>
     </template>
     <template #header-extra>
       <n-button text class="header-icon" @click.prevent.stop="handleMoreAction">
@@ -54,7 +44,13 @@ function handleMoreAction(ev) {
       <n-text class="content" :depth="3"> {{ abbrev }} </n-text>
     </template>
     <template #footer>
-      <n-text class="footer" :depth="3">{{ date }}</n-text>
+      <div class="footer">
+        <n-text class="footer" :depth="3">{{ date }}</n-text>
+        <div class="publish">
+          <n-icon v-if="isPublish" :component="PublicFilled" size="18" />
+          <!-- <n-text class="footer" :depth="3">{{ isPublish ? '已发布' : '' }}</n-text> -->
+        </div>
+      </div>
     </template>
   </n-card>
 </template>
@@ -107,6 +103,12 @@ function handleMoreAction(ev) {
     border-top: 1px solid #ffffff00;
   }
 }
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
 .header-title {
   margin-right: 6px;
   display: block;
@@ -125,6 +127,16 @@ function handleMoreAction(ev) {
 }
 
 .footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   font-size: 12px;
+  .publish {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-right: 6px;
+    opacity: 0.8;
+  }
 }
 </style>

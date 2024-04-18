@@ -48,17 +48,22 @@ export const product = {
         progressCallback && progressCallback(percentCompleted)
       }
     })
-  }
-
-  // remove<T>(productId: string) {
-  //   return maxios.patch<T>('/product/update/remove/' + productId)
-  // },
-  // restore<T>(productId: string) {
-  //   return maxios.patch<T>('/product/update/restore/' + productId)
-  // },
-  // delete<T>(productId: string) {
-  //   return maxios.delete<T>('/product/delete/' + productId)
-  // },
+  },
+  publish<T>(id: string) {
+    return maxios.patch<T>('/product/update/publish/' + id)
+  },
+  remove<T>(id: string) {
+    return maxios.patch<T>('/product/update/remove/' + id)
+  },
+  restore<T>(productId: string) {
+    return maxios.patch<T>('/product/update/restore/' + productId)
+  },
+  delete<T>(productId: string) {
+    return maxios.delete<T>('/product/delete/' + productId)
+  },
+  updateTitle<T>(dto: UpdateTitleDto) {
+    return maxios.patch<T>('/product/update/title', dto)
+  },
   // move<T>(productId: string, folderId: string) {
   //   return maxios.patch<T>('/product/update/move/' + productId, { folderId })
   // },
@@ -66,9 +71,6 @@ export const product = {
   //   return maxios.post<T>('/product/write/copy/' + productId, { folderId })
   // },
   // /** product update */
-  // updateTitle<T>(dto: UpdateTitleDto) {
-  //   return maxios.patch<T>('/product/update/title', dto)
-  // },
   // updateContent<T>(dto: UpdateContentDto) {
   //   return maxios.patch<T>('/product/update/content', dto)
   // },

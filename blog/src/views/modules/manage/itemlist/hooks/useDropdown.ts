@@ -9,7 +9,7 @@ import { DropdownOption } from 'naive-ui'
 import { MessageApiInjection } from 'naive-ui/es/message/src/MessageProvider'
 import SelectCollectionForm from '../../form/SelectCollectionForm.vue'
 import useStore, { useManageStore } from '@/store'
-import { DriveFileMoveRtlFilled } from '@vicons/material'
+import { DriveFileMoveRtlFilled, DriveFileRenameOutlineFilled } from '@vicons/material'
 import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
 type Article = ReturnType<typeof useManageStore>['collectionStore']['subfiles'][0]
 export function useListDropDown () {
@@ -74,7 +74,12 @@ export function useListDropDown () {
         key: 'publish',
         props: {
           onClick: () => {
-            collectionStore.subfiles[collectionStore.subfiles.findIndex(item => item.id === target.id)].isPublish = !target.isPublish
+            productStore.publish(target.id).then(res => {
+              const index = collectionStore.subfiles.findIndex(item => item.id === target.id)
+              if (index !== -1) collectionStore.subfiles[index].isPublish = res.data
+            }).catch(err => {
+              message.error('发布状态更新失败！')
+            })
           }
         }
       },
@@ -83,7 +88,42 @@ export function useListDropDown () {
         key: 'updateTitle',
         props: {
           onClick: () => {
-            console.log('45')
+            const newTitle = ref(target.title)
+            dialog.create({
+              icon: () => h(NIcon, { component: DriveFileRenameOutlineFilled, size: 24 }),
+              title: '文件夹重命名',
+              content: () =>
+                h(NInput, {
+                  type: 'text',
+                  placeholder: '输入新名称',
+                  maxlength: 32,
+                  showCount: true,
+                  value: newTitle.value,
+                  onInput: value => {
+                    newTitle.value = value
+                  }
+                }),
+              positiveText: '确定',
+              negativeText: '取消',
+              maskClosable: true,
+              onPositiveClick: () => {
+                if (newTitle.value === target.title) return
+                if (newTitle.value === '') message.error('作品名称不能为空！')
+                if (newTitle.value && target.id) {
+                  productStore.updateTitle(target.id, newTitle.value).then(res => {
+                    if (target.collectionId === collectionStore.id) {
+                      collectionStore.subfiles.some((item, index, arr) => {
+                        if (item.id === target.id) {
+                          arr[index].title = newTitle.value
+                          return true
+                        }
+                      })
+                    }
+                  })
+                }
+              }
+            })
+            
           }
         }
       },
@@ -148,7 +188,11 @@ export function useListDropDown () {
         key: 'remove',
         props: {
           onClick: () => {
-            collectionStore.removeSubfileById(target.id)
+            productStore.remove(target.id).then(res => {
+              if(target.collectionId === collectionStore.id) {
+                collectionStore.removeSubfileById(target.id)
+              }
+            })
           }
         }
       }

@@ -1,7 +1,7 @@
 import { maxios } from './index'
 
 interface CreateCollectionDto {
-  label: string
+  name: string
 }
 
 interface UpdateTitleDto {
@@ -46,30 +46,19 @@ export const collection = {
   getUnfiled<T>() {
     return maxios.get<T>('/collection/read/unfiled')
   },
-
-  // remove<T>(collectionId: string) {
-  //   return maxios.patch<T>('/collection/update/remove/' + collectionId)
-  // },
-  // restore<T>(collectionId: string) {
-  //   return maxios.patch<T>('/collection/update/restore/' + collectionId)
-  // },
-  // delete<T>(collectionId: string) {
-  //   return maxios.delete<T>('/collection/delete/' + collectionId)
-  // },
-  // move<T>(collectionId: string, folderId: string) {
-  //   return maxios.patch<T>('/collection/update/move/' + collectionId, { folderId })
-  // },
-  // copy<T>(collectionId: string, folderId: string) {
-  //   return maxios.post<T>('/collection/write/copy/' + collectionId, { folderId })
-  // },
-  // /** collection update */
-  // updateTitle<T>(dto: UpdateTitleDto) {
-  //   return maxios.patch<T>('/collection/update/title', dto)
-  // },
-  // updateContent<T>(dto: UpdateContentDto) {
-  //   return maxios.patch<T>('/collection/update/content', dto)
-  // },
-  // push<T>(dto: { id: string, title: string, msg: string, ssoToken: string }) {
-  //   return maxios.post<T>('/collection/push/', dto)
-  // }
+  publish<T>(collectionId: string) {
+    return maxios.patch<T>('/collection/update/publish/' + collectionId)
+  },
+  rename<T>(collectionId: string, newname: string) {
+    return maxios.patch<T>('/collection/update/rename', { id: collectionId, newname })
+  },
+  remove<T>(collectionId: string) {
+    return maxios.patch<T>('/collection/update/remove/' + collectionId)
+  },
+  restore<T>(collectionId: string) {
+    return maxios.patch<T>('/collection/update/restore/' + collectionId)
+  },
+  delete<T>(collectionId: string) {
+    return maxios.delete<T>('/collection/delete/' + collectionId)
+  }
 }

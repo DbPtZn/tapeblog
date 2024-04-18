@@ -2,18 +2,17 @@
 import { NButton, useThemeVars } from 'naive-ui'
 import { LibraryEnum, MaterialTypeEnum } from '@/enums'
 import { onMounted, ref } from 'vue'
-import { FileCard, FolderCard, CollapseButton } from './private'
+import { FileCard } from './private'
 import useStore, { SortType } from '@/store'
 import utils from '@/utils'
 import { ManagerShell } from '../shell'
 import { useShell } from '@/renderer'
 import { useListDropDown } from './hooks/useDropdown'
 import { DropdownMixedOption } from 'naive-ui/es/dropdown/src/interface'
+import { MoreHorizFilled, ChevronLeftFilled } from '@vicons/material'
 import ItemListContainer from './ItemListContainer.vue'
-import * as UUID from 'uuid'
 const shell = useShell<ManagerShell>()
 const themeVars = useThemeVars()
-// const dropdown = new ItemListDropDown()
 
 const value = ref()
 const listRef = ref<HTMLElement>()
@@ -27,7 +26,6 @@ const handleCollapseItemlist = () => {
   ? (settingStore.isSidebarCollapse ? (shell.expandItemlist(), shell.expandSidebar()) : shell.expandItemlist())
   : (shell.collapseItemlist())
 }
-function handleBack() {}
 function generateHeaderBtnOptions (): DropdownMixedOption[] {
   return [
     {
@@ -65,25 +63,8 @@ function generateHeaderBtnOptions (): DropdownMixedOption[] {
     },
     {
       label: '设置',
-      key: UUID.v4(),
-      props: {
-        onClick: () => {
-          console.log('45')
-        }
-      }
-    },
-    {
-      label: '重命名',
-      key: UUID.v4(),
-      props: {
-        onClick: () => {
-          console.log('45')
-        }
-      }
-    },
-    {
-      label: '移除',
-      key: UUID.v4(),
+      key: 'settings',
+      disabled: true,
       props: {
         onClick: () => {
           console.log('45')
@@ -92,12 +73,7 @@ function generateHeaderBtnOptions (): DropdownMixedOption[] {
     }
   ]
 }
-// function generateCardOptions (id: string, isPublish: boolean): DropdownMixedOption[] {
-//   if (collectionStore.id === 'unfiled') {
-//     return dropdown.getUnfiledDropdownOptions(id)
-//   }
-//   return dropdown.getFileDropdownOptions(id, isPublish)
-// }
+
 function handleToFile(id: string, isParsed: boolean) {
   console.log(isParsed)
   shell.useWorkbench()
@@ -117,31 +93,36 @@ const { dropdownState, options, handleClickoutside, handleContextmenu, handleMor
 <template>
   <ItemListContainer>
   <div class="itemlist" @mouseover="collapseVisible = true" @mouseleave="collapseVisible = false">
-    <Header class="header">
-      <n-page-header subtitle="" @back="handleBack">
-        <template #back>
-          <!-- <DpzIcon :icon="`${MaterialTypeEnum.FILLED}share`" :size="18" /> -->
-        </template>
-        <template #title>
-          <span>{{ collectionStore.name }}</span>
-        </template>
-        <template #extra>
-          <n-space>
-            <n-dropdown trigger="click" :options="generateHeaderBtnOptions()" placement="bottom-start">
-              <n-button :bordered="false" style="padding: 0 4px">
-                <DpzIcon :icon="`${MaterialTypeEnum.FILLED}more_vert`" :size="24" />
-              </n-button>
-            </n-dropdown>
-          </n-space>
-        </template>
-      </n-page-header>
-    </Header>
+    <div class="header">
+      <!-- 顶部导航 -->
+      <div class="header-nav">
+        <!-- 当前文件夹 -->
+        <div class="header-nav-left">
+          <!-- 普通文件夹模式下 -->
+          <div class="header-nav-left-item">
+            <div class="name">
+              {{ collectionStore.name }} 
+            </div>
+          </div>
+        </div>
+        <!-- 按钮 -->
+        <div class="header-nav-right">
+          <n-dropdown trigger="click" :options="generateHeaderBtnOptions()" placement="bottom-start">
+            <n-button text >
+              <n-icon :component="MoreHorizFilled" :size="24" />
+            </n-button>
+          </n-dropdown>
+        </div>
+      </div>
+    </div>
     <div ref="scrollerRef" class="main">
       <div ref="listRef" class="list">
         <FileCard
-          v-for="item in collectionStore.subfiles"
+          v-for="item in collectionStore.getSubfiles(sortType)"
           :id="item.id"
-          :title="`${item.title}${item.isPublish ? '' : '[未发布]'}` || '未命名文档'"
+          :type="item.type"
+          :is-publish="item.isPublish"
+          :title="item.title"
           :abbrev="item.abbrev"
           :date="utils.dateFormat2(new Date(item.updateAt))"
           :key="item.id"
@@ -172,12 +153,41 @@ const { dropdownState, options, handleClickoutside, handleContextmenu, handleMor
 </template>
 
 <style lang="scss" scoped>
+.header-nav {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  // align-items: center;
+  // justify-content: space-between;
+  .header-nav-left {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    flex: 1;
+    .header-nav-left-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      .name {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+  .header-nav-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 6px;
+    }
+}
 .header {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 24px 12px 18px 12px;
-  // border-bottom: 1px solid v-bind('themeVars.dividerColor');
 }
 .main {
   flex: 1;

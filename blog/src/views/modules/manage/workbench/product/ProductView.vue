@@ -5,6 +5,7 @@ import { useThemeVars } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useEditor } from './hooks/useEditor'
 import { onMounted } from 'vue'
+import { ProductTypeEnum } from '@/enums'
 import dayjs from 'dayjs'
 import _ from 'lodash'
 const themeVars = useThemeVars()
@@ -42,7 +43,7 @@ onMounted(() => {
         <n-divider class="product-footer-divider" dashed />
       </div>
     </n-card>
-    <div ref="controllerRef" :class="['controller']"></div>
+    <div v-show="productStore.get(id)?.type === ProductTypeEnum.COURSE" ref="controllerRef" :class="['controller']"></div>
   </div>
 </template>
 

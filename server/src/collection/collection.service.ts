@@ -21,7 +21,7 @@ export class CollectionService {
     collection.UID = UID
     collection.name = name
     collection.account = account
-    // collection.isPublish = false
+    collection.isPublish = false
     // console.log(collection)
     const newCollection = await this.collectionsRepository.save(collection)
     return newCollection
@@ -107,12 +107,43 @@ export class CollectionService {
     return unfiled
   }
 
-  update(id: number, updateCollectionDto: UpdateCollectionDto) {
-    return `This action updates a #${id} collection`
+  async publish(_id: ObjectId, userId: ObjectId) {
+    const collection = await this.collectionsRepository.findOneBy({ _id, userId })
+    collection.isPublish = !collection.isPublish
+    return this.collectionsRepository.save(collection)
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} collection`
+  async rename(_id: ObjectId, newname: string, userId: ObjectId) {
+    const collection = await this.collectionsRepository.findOneBy({ _id, userId })
+    collection.name = newname
+    return this.collectionsRepository.save(collection)
+  }
+
+  async remove(_id: ObjectId, userId: ObjectId) {
+    const collection = await this.collectionsRepository.findOneBy({ _id, userId })
+    collection.removed = RemovedEnum.ACTIVE
+    return this.collectionsRepository.save(collection)
+  }
+
+  async restore(_id: ObjectId, userId: ObjectId) {
+    const collection = await this.collectionsRepository.findOneBy({ _id, userId })
+    collection.removed = RemovedEnum.NEVER
+    return this.collectionsRepository.save(collection)
+  }
+
+  async delete(_id: ObjectId, userId: ObjectId, UID: string) {
+    // try {
+    //   const folder = await this.collectionsRepository.findOneBy({ _id, userId })
+    //   const result = await this.collectionsRepository.remove(folder)
+    //   // 注意，删除成功后， folder._id 和 result._id 都会是 undefined
+    //   // 删除文件夹下的所有文件(不包括其子文件夹,也不包括其中已被移除的文件)
+    //   const projects = await this.productService.findAllByFolderId(_id, userId)
+    //   projects.forEach(async project => {
+    //     await this.productService.delete(project._id, userId, UID)
+    //   })
+    // } catch (error) {
+    //   throw error
+    // }
   }
 
   /** 博客公开查询 */

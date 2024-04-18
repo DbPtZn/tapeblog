@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { FormInst, FormItemRule, FormRules } from 'naive-ui'
 interface ModelType {
-  label: string
+  name: string
 }
 type Response = ModelType & Record<string, unknown>
 const props = defineProps<{
@@ -13,11 +13,11 @@ const props = defineProps<{
 const formRef = ref<FormInst | null>(null)
 /** 表单数据 */
 const model = ref<ModelType>({
-  label: '',
+  name: '',
 })
 /** 表单规则 */
 const rules: FormRules = {
-  label: [
+  name: [
     {
       required: true,
       message: '合辑名称不能为空',
@@ -50,8 +50,8 @@ function handleSubmit(e: MouseEvent) {
     <n-space vertical>
       <!-- <div class="tip">新建文件夹</div> -->
       <n-form ref="formRef" :model="model" :rules="rules" :show-require-mark="false">
-        <n-form-item path="label" label="合辑名称">
-          <n-input class="form-input" v-model:value="model.label" type="text" placeholder="请输入合辑名称" maxlength="18" show-count />
+        <n-form-item path="name" label="合辑名称">
+          <n-input class="form-input" v-model:value="model.name" type="text" placeholder="请输入合辑名称" maxlength="18" show-count />
         </n-form-item>
       </n-form>
       <n-button class="confirm" @click="handleSubmit">创建</n-button>
