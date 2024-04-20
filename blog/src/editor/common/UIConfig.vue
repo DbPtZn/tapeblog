@@ -9,11 +9,11 @@
 import { inject, onUnmounted, ref } from 'vue'
 import { GlobalTheme, darkTheme } from 'naive-ui'
 import { Injector } from '@textbus/core'
-import { ConfigProvider } from '@/editor'
+import { ThemeProvider } from '@/editor'
 const injector = inject<Injector>('injector')
-const configProvider = injector?.get(ConfigProvider)
-const theme = ref<GlobalTheme | null | undefined>(configProvider?.theme === 'dark' ? darkTheme : null)
-const sub = configProvider?.onThemeUpdate.subscribe(themeState => {
+const themeProvider = injector?.get(ThemeProvider)
+const theme = ref<GlobalTheme | null | undefined>(themeProvider?.theme === 'dark' ? darkTheme : null)
+const sub = themeProvider?.onThemeUpdate.subscribe(themeState => {
   switch (themeState) {
     case 'dark':
       theme.value = darkTheme

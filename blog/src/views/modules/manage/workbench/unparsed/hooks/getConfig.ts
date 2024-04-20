@@ -29,7 +29,7 @@ export function getEditorConfig(content: string, hostname: string, accessToken: 
         hostname:  hostname,
         accessToken: accessToken,
         uploadImgUrl: uploadImgUrl
-      })
+      })  
     }
   }
   return config

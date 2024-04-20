@@ -1,4 +1,5 @@
-export * from './MaterialTypeEnum'
 import UIConfig from './UIConfig.vue'
 import UIIcon from './UIIcon.vue'
-export { UIConfig, UIIcon }
+export { UIIcon, UIConfig }
+
+export * from './MaterialTypeEnum'

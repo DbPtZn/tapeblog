@@ -5,7 +5,7 @@ import { OutlineService } from './outline.service'
 import { App, createApp, h, Ref, ref } from 'vue'
 import OutlineView, { OutlineItem } from './OutlineView.vue'
 import { UIConfig } from '../../common'
-import { ConfigProvider } from '@/editor'
+import { ConfigProvider, Structurer } from '@/editor'
 
 export class OutlinePlugin implements Plugin {
   private app!: App | null
@@ -23,19 +23,20 @@ export class OutlinePlugin implements Plugin {
   constructor() {}
   setup(injector: Injector): void {
     const layout = injector.get(Layout)
-    const configProvider = injector.get(ConfigProvider)
+    // const configProvider = injector.get(ConfigProvider)
+    const structurer = injector.get(Structurer)
     this.injector = injector
     this.workbench = layout.workbench
     this.rootComponentRef = injector.get(RootComponentRef) // 获取根组件
     this.renderer = injector.get(Renderer)
     this.outlineService = injector.get(OutlineService)
-    this.scrollerRef = configProvider.scrollerRef!
+    this.scrollerRef = structurer.scrollerRef!
     this.outlineData = ref<OutlineItem[]>([]) // 大纲视图数据
     this.activeIndex = ref<number>(0)
     this.scrollTop = ref<number>(0)
     /** 创建挂载大纲视图的节点 */
     this.host = createElement('div', { classes: ['outline-container'] }) // 挂载大纲视图的节点
-    // this.element.appendChild(this.host) // 将挂载节点插入 workbench 中
+    this.workbench.appendChild(this.host) // 将挂载节点插入 workbench 中
     // this.expand()
     this.subs.push(
       // TODO 设置条件：1.当且仅当大纲视图展开时才同步更新。
@@ -62,18 +63,14 @@ export class OutlinePlugin implements Plugin {
       }),
       fromEvent(this.scrollerRef, 'scroll').pipe(debounceTime(20)).subscribe(() => {
         this.activeIndex.value = this.outlineData.value.findIndex(item => item.offsetTop >= this.scrollerRef.scrollTop)
-        // this.scrollTop.value = this.scrollerRef.scrollTop
+        this.scrollTop.value = this.scrollerRef.scrollTop
       }),
       this.outlineService.onExpand.subscribe(() => {
         this.outlineService.isExpanded ? this.expand() : this.collapse()
-      }),
-      this.outlineService.onMount.subscribe((host) => {
-        host.appendChild(this.host)
-        this.expand()
       })
     )
+    // 2. 跟随页面滚动
   }
-
   // 展开视图
   private expand() {
     /** 处理 workbench 的结构，让大纲视图可以在编辑器的右侧显示 */

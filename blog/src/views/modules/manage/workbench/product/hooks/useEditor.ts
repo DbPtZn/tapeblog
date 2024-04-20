@@ -6,12 +6,26 @@ import useStore from '@/store'
 import { getProductConfig } from './product.config'
 import { CustomThemeCommonVars, ThemeCommonVars } from 'naive-ui'
 import { Starter } from '@textbus/core'
-import { ConfigProvider, Player } from '@/editor'
+import { ConfigProvider, Player, ThemeProvider } from '@/editor'
 
-export function useEditor(id: string, editorRef: Ref<HTMLElement>, scrollerRef: Ref<HTMLElement>, controllerRef: Ref<HTMLElement>, layoutRef: Ref<HTMLElement>) {
+export function useEditor(args: {
+  id: string
+  rootRef: Ref<HTMLElement>
+  editorRef: Ref<HTMLElement>
+  scrollerRef: Ref<HTMLElement>
+  controllerRef: Ref<HTMLElement>
+}) {
+  const { id, rootRef, editorRef, scrollerRef, controllerRef } = args
   const { productStore } = useStore('manage')
   const { settingStore } = useStore()
   let editor: Editor
+  watch(
+    () => settingStore.theme,
+    () => {
+      const themeProvider = editor?.get(ThemeProvider)
+      themeProvider?.handleThemeUpdate(settingStore.getCurrentTheme())
+    }
+  )
   return new Promise<Editor>((resolve, reject) => {
     onMounted(() => {
       productStore.fetchAndSet(id).then(data => {
@@ -25,15 +39,18 @@ export function useEditor(id: string, editorRef: Ref<HTMLElement>, scrollerRef: 
             subtitleKeyframeSequence: data.subtitleKeyframeSequence
           }
           console.log(courseData)
-          editor = createEditor(getProductConfig({
-            content: data.content,
-            scrollerRef: scrollerRef.value,
-            controllerRef: controllerRef.value,
-            layoutRef: layoutRef.value
-          }))
+          editor = createEditor(
+            getProductConfig({
+              rootRef: rootRef.value,
+              editorRef: editorRef.value,
+              scrollerRef: scrollerRef.value,
+              controllerRef: controllerRef.value,
+              content: data.content
+            })
+          )
           editor.mount(editorRef.value).then(() => {
-            const configProvider = editor?.get(ConfigProvider)
-            configProvider?.handleThemeUpdate(settingStore.getCurrentTheme())
+            const themeProvider = editor?.get(ThemeProvider)
+            themeProvider?.handleThemeUpdate(settingStore.getCurrentTheme())
             /** 载入数据 */
             /** 载入微课数据 */
             const player = editor?.get(Player)

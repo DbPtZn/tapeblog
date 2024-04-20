@@ -38,8 +38,7 @@ const state = reactive({
 
 <style lang="scss" scoped>
 .editor-outline {
-  // width: 200px;
-  width: 100%;
+  width: 200px;
   transition: top 0.2s ease-in-out;
   overflow-x: hidden;
 }

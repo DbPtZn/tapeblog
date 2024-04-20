@@ -1,24 +1,29 @@
-import { VElement, Formatter, VTextNode, RenderMode } from '@textbus/core'
+import {
+  VElement,
+  Formatter,
+  Subject,
+  Observable,
+  Injectable,
+  VTextNode,
+  RenderMode
+} from '@textbus/core'
 import { ANIME, ANIME_FORMATTER_NAME } from '../anime.constant'
-// import { animeClickEvent, animeContextmenuEvent, AnimeStateProvider } from '@/editor'
 import { FormatLoader } from '@textbus/platform-browser'
-// import { AnimeInfo } from '..'
 
-// const animeFormatterClickEvent: Subject<any> = new Subject()
-// export const onAnimeFormatterClick: Observable<AnimeInfo> = animeFormatterClickEvent.asObservable()
+const animePlayerFormatterContextmenuEvent: Subject<{ vdom: VElement; event: MouseEvent }> = new Subject()
+export const onAnimePlayerFormatterContextmenu: Observable<{ vdom: VElement; event: MouseEvent }> = animePlayerFormatterContextmenuEvent.asObservable()
 
-// const animeFormatterContextmenuEvent: Subject<any> = new Subject()
-// export const onAnimeFormatterContextmenu: Observable<{ vdom: VElement; event: PointerEvent }> =
-//   animeFormatterContextmenuEvent.asObservable()
-
-// @Injectable()
 export class AnimePlayerFormatter implements Formatter<any> {
   name = ANIME_FORMATTER_NAME
   tagName = ANIME
   columned = false
   priority = 0
-
-  render(children: Array<VElement | VTextNode>, formatValue: Record<string, string>, renderMode: RenderMode): VElement {
+  
+  render(
+    children: Array<VElement | VTextNode>,
+    formatValue: Record<string, string>,
+    renderMode: RenderMode
+  ): VElement {
     const vdom = new VElement(
       ANIME,
       {
@@ -26,27 +31,24 @@ export class AnimePlayerFormatter implements Formatter<any> {
         'data-serial': formatValue.dataSerial,
         'data-effect': formatValue.dataEffect,
         'data-state': formatValue.dataState,
-        title: formatValue.title
+        'data-title': formatValue.dataTitle
       },
       children
     )
+    // if (formatValue.state === 'active') {
+    //   vdom.classes.add('active')
+    // }
     // vdom.listeners.click = (ev: Event) => {
     //   ev.preventDefault()
     //   ev.stopPropagation()
     //   const element = ev.target as HTMLElement
-    //   animeFormatterClickEvent.next({
-    //     id: element.dataset.id,
-    //     effect: element.dataset.effect,
-    //     serial: element.dataset.serial
-    //   })
     // }
-    // vdom.listeners.contextmenu = (event: Event) => {
-    //   // console.log('右击')
-    //   // console.log(event)
-    //   event.preventDefault() // 阻止默认事件
-    //   event.stopPropagation() // 阻止事件冒泡
-    //   animeFormatterContextmenuEvent.next({ vdom, event })
-    // }
+    vdom.listeners.contextmenu = (event: Event) => {
+      // console.log('右击')
+      // event.preventDefault() // 阻止默认事件
+      // event.stopPropagation() // 阻止事件冒泡
+      animePlayerFormatterContextmenuEvent.next({ vdom, event: event as MouseEvent })
+    }
     return vdom
   }
 }
@@ -63,8 +65,8 @@ export const animePlayerFormatLoader: FormatLoader<any> = {
       dataId: node.dataset.id as string,
       dataSerial: node.dataset.serial as string,
       dataEffect: node.dataset.effect as string,
-      dataState: node.dataset.state as string,
-      title: node.title
+      dataState:  node.dataset.state as string,
+      dataTitle: node.dataset.title as string,
     }
     return {
       formatter: animePlayerFormatter,

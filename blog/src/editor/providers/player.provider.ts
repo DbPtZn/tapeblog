@@ -1,12 +1,9 @@
 import { Injectable, Injector, Subscription, fromEvent } from '@textbus/core'
 import { Observable, Subject } from '@textbus/core'
-// import { CourseData } from '../types'
-import { ConfigProvider } from '@/editor'
-import { VIEW_CONTAINER, VIEW_DOCUMENT } from '@textbus/platform-browser'
-import { Editor, Layout } from '@textbus/editor'
-// import { AnimeEffectMap } from '../common/_index'
+import { AnimeProvider, Structurer } from '@/editor'
+import { VIEW_CONTAINER } from '@textbus/platform-browser'
+import { Layout } from '@textbus/editor'
 import _ from 'lodash'
-import { AnimeProvider } from './anime.provider'
 
 export interface CourseData {
   audio: string
@@ -59,12 +56,12 @@ export class Player {
   private data!: ParseData[] // 数据
   sourceData!: CourseData[] // 源数据
   private scrollerRef!: HTMLElement // 滚动条
-  courseRef!: HTMLElement // 课程最外层容器
+  private rootRef!: HTMLElement // 课程最外层容器
   private containerRef!: HTMLElement
   private subs: Subscription[] = []
   private scrollerSub!: Subscription
-  private timer!: any // NodeJS.Timeout
-  private scrollTimer!: any // NodeJS.Timeout
+  private timer!: NodeJS.Timeout
+  private scrollTimer!: NodeJS.Timeout
 
   /** 公开状态 */
   public subtitle = ''
@@ -72,10 +69,12 @@ export class Player {
   public volume = 1
   public isPlaying = false
   public isPause = false
-  public currentTime = 0
+  public currentTime = 0 // 当前片段播放时间
+  public totalTime = 0 // 当前总播放时间
   public scrollTop = 0
 
   /** 临时记录 */
+  private total = 0
   private animeCount = 0
   private subtitleCount = 0
   private keyframeHistory: number[] = []
@@ -90,49 +89,52 @@ export class Player {
   private animeElementSequence: NodeListOf<HTMLElement>[] = []
 
   constructor() {}
-  setup(injector: Injector, scrollerRef: HTMLElement, courseRef: HTMLElement) {
-    this.injector = injector
-    this.scrollerRef = scrollerRef
-    this.courseRef = courseRef
-    this.containerRef = this.injector.get(Layout).container
+  setup(injector: Injector, scrollerRef: HTMLElement) {
+    const structurer = injector.get(Structurer)
+    // loadData 依赖 scrollerRef， 依赖注入时应保证 structurer 依赖在前面，为了避免 structurer 顺序问题，要求在 setup 中传入 scrollerRef
+    this.scrollerRef = scrollerRef || structurer.scrollerRef!
+    this.containerRef = injector.get(Layout).container
     this.anime = injector.get(AnimeProvider)
+    this.injector = injector
   }
 
   loadData(data: CourseData[]) {
-    this.sourceData = data
-    const audioSequence = data.map(item => {
-      return loadAudio(item.audio)
-    })
-    /** 预加载音频文件 */
-    return Promise.all(audioSequence)
-      .then(audios => {
-        // 音频全部载入完成的后续操作
-        this.data = data.map((item, index) => {
-          return {
-            audio: audios[index],
-            duration: item.duration,
-            animeElementSequence: item.promoterSequence.map(item => {
-              return this.scrollerRef.querySelectorAll<HTMLElement>(`[data-id="${item}"]`)
-            }),
-            keyframeSequence: item.keyframeSequence,
-            subtitleSequence: item.subtitleSequence,
-            subtitleKeyframeSequence: item.subtitleKeyframeSequence
-          }
+    return new Promise<ParseData[]>((resolve, reject) => {
+      this.sourceData = data
+      // 导入音频数据（在 preview 模式下是多个音频片段）
+      const audioSequence = data.map(item => {
+        return loadAudio(item.audio)
+      })
+      /** 预加载音频文件 */
+      return Promise.all(audioSequence)
+        .then(audios => {
+          // 音频全部载入完成的后续操作
+          this.data = data.map((item, index) => {
+            return {
+              audio: audios[index],
+              duration: item.duration,
+              animeElementSequence: item.promoterSequence.map(item => {
+                return this.scrollerRef.querySelectorAll<HTMLElement>(`[data-id="${item}"]`)
+              }),
+              keyframeSequence: item.keyframeSequence,
+              subtitleSequence: item.subtitleSequence,
+              subtitleKeyframeSequence: item.subtitleKeyframeSequence
+            }
+          })
+          resolve(this.data)
         })
-        console.log('音频文件加载完成')
-        console.log(this.data)
-      })
-      .catch(error => {
-        console.error('音频文件加载失败：' + error)
-        return
-      })
+        .catch(error => {
+          console.error('音频文件加载失败：' + error)
+          return
+        })
+    })
   }
 
   /** 递归播放多个项目 */
   private playMulti(args: {
     data: ParseData[]
     index: number,
-    startPoint?: { startTime, startIndex }[] // 起点
+    startPoint?: { startTime: number, startIndex: number }[] // 起点
   }) {
     const { data, index, startPoint } = args
   
@@ -150,7 +152,6 @@ export class Player {
       if (this.isPlaying) return console.warn('正在播放中')
 
       /** 设置起始播放点  */
-      
       if (startPoint) {
         if(startPoint[index].startIndex) {
           this.setAnimeVisible(false, startPoint[index].startIndex)
@@ -175,12 +176,12 @@ export class Player {
       this.isPlaying = true
       this.rate = this.audio.playbackRate
       this.volume = this.audio.volume
+      this.stateUpdateEvent.next('') // 触发状态更新
      
       /** 是否包含字幕信息 */
       const hasSubtitle = subtitleSequence && subtitleSequence.length > 0 && subtitleKeyframeSequence && subtitleKeyframeSequence.length > 0
 
       this.timer = setInterval(() => {
-
         // 处理字幕
         if (hasSubtitle) {
           if (this.audio!.currentTime > subtitleKeyframeSequence[this.subtitleCount]) {
@@ -201,6 +202,7 @@ export class Player {
         }
 
         this.currentTime = this.audio!.currentTime // 记录当前播放时间
+        this.totalTime = this.total + this.audio!.currentTime // 记录当前总播放时间
       }, 50)
       
       // 播放当前音频
@@ -219,10 +221,13 @@ export class Player {
       this.audio.addEventListener('ended', () => {
         this.clear()
         clearInterval(this.timer)
+        this.total += duration
         this.playMulti({ data, index: index + 1, startPoint })
       })
     } else {
       this.clear()
+      this.total = 0
+      this.totalTime = 0
       this.setAnimeVisible(true)
       this.stateUpdateEvent.next('')
       this.playOverEvent.next('') // 所有音频播放完毕,发布播放结束的订阅
@@ -230,9 +235,17 @@ export class Player {
       this.scrollerSub = fromEvent(this.scrollerRef, 'scroll').subscribe(ev => {
         this.showIgnoreComponent()
         this.scrollerSub.unsubscribe()
+        clearTimeout(timer)
       })
+      // 或者在 5 s 后显示（考虑可能没有滚动条的情况）
+      const timer = setTimeout(() => {
+        this.showIgnoreComponent()
+        this.scrollerSub.unsubscribe()
+        clearTimeout(timer)
+      }, 5000);
     }
   }
+
 
   /** 启动播放 */
   @UpdateState
@@ -275,10 +288,10 @@ export class Player {
 
   /** 倒回 */
   @UpdateState
-  rewind(sec = 2) {
+  rewind() {
     if (!this.audio || !this.isPlaying) return
-    if (this.audio.currentTime > sec) {
-      this.audio.currentTime -= sec // 回跳 2 秒
+    if (this.audio.currentTime > 2) {
+      this.audio.currentTime -= 2 // 回跳 2 秒
       for (let index = this.keyframeHistory.length - 1; index >= 0; index--) {
         // 历史关键帧 > 当前播放时间
         if (this.keyframeHistory[index] > this.audio.currentTime) {
@@ -295,10 +308,10 @@ export class Player {
 
   /** 快进 */
   @UpdateState
-  forward(sec = 2) {
+  forward() {
     if (!this.audio || !this.isPlaying) return
-    if (this.audio.currentTime < this.audio.duration - sec) {
-      this.audio.currentTime += sec //后跳 2 秒
+    if (this.audio.currentTime < this.audio.duration - 2) {
+      this.audio.currentTime += 2 //后跳 2 秒
     }
   }
 
@@ -377,7 +390,6 @@ export class Player {
       this.audio.pause()
       this.audio.currentTime = 0
     }
-
     this.animeCount = 0
     this.subtitleCount = 0
     this.keyframeHistory = []
@@ -385,6 +397,7 @@ export class Player {
     this.isPlaying = false
     this.isPause = false
     this.currentTime = 0
+
     this.scrollTop = this.scrollerRef.scrollTop
 
     clearInterval(this.timer)
@@ -392,7 +405,18 @@ export class Player {
     this.subtitleUpdataEvent.next(this.subtitle) // 发布字幕更新订阅
   }
 
-  hideIgnoreComponent() {
+  /** 初始化 */
+  private init() {
+    // 初始化滚动区
+    this.scrollerRef.scrollTop = 0
+    // 初始化
+    this.total = 0
+    this.totalTime = 0
+    // 初始化播放器数据状态
+    this.clear()
+  }
+
+  private hideIgnoreComponent() {
     const container = this.injector.get(VIEW_CONTAINER)
     const elements = container.querySelectorAll<HTMLElement>('anime-ignore')
     elements.forEach(el => {
@@ -400,7 +424,7 @@ export class Player {
     })
   }
   
-  showIgnoreComponent() {
+  private showIgnoreComponent() {
     const container = this.injector.get(VIEW_CONTAINER)
     const elements = container.querySelectorAll<HTMLElement>('anime-ignore')
     elements.forEach(el => {
@@ -408,15 +432,6 @@ export class Player {
     })
   }
 
-  /** 初始化 */
-  private init() {
-    // 初始化滚动区
-    this.scrollerRef.scrollTop = 0
-    // 初始化播放器数据状态
-    this.clear()
-  }
-
-  
 
   /** 设置动画可见状态 */
   private setAnimeVisible(visible: boolean, startPoint = 0) {
@@ -459,10 +474,7 @@ export class Player {
         el.style.display = 'block'
         break
     }
-    // if (el.tagName.toLocaleLowerCase() === 'anime') el.style.display = 'inline-block'
-    // else  el.style.display = 'block'
-    // const anime = AnimeEffectMap.get(effectValue)
-    const anime = this.anime.get(effectValue)
+    const anime = this.anime.getAnime(effectValue)
     if (anime) {
       anime.applyEffect(el).finished.then(() => {
         el.style.display = display
@@ -510,7 +522,7 @@ export class Player {
     const NodeHeight = el.clientHeight // 元素自身的高度
     const Node2HorizonBottom = Horizon + Scrolled - Node2Top - NodeHeight //节点距离可视区间底部
     if (Node2Top < Scrolled) {
-      this.clearInterval(1) // 立即结束上一个滚动事务
+      this.clearInterval() // 立即结束上一个滚动事务
       // 节点距离可视区间顶部小于滚动距离（溢出可视区间上边界），执行回滚动作
       let Node2HorizonTop = Scrolled - Node2Top // 溢出上边界的高度 = 已滚距离 - 节点至文档顶部距离
       let rollSpeed = Math.round((Node2HorizonTop + overflowTopReservedZone) / (30 / overflowTopRollSpeed)) // 基于溢出上边界的距离(加预留区高度)来计算滚动速率
@@ -519,12 +531,12 @@ export class Player {
         scroller.scrollTop -= rollSpeed
         Node2HorizonTop -= rollSpeed
         if (Node2HorizonTop <= -overflowTopReservedZone) {
-          this.clearInterval(1.1)
+          this.clearInterval()
           return
         }
       }, 10)
     } else if (Node2HorizonBottom < 0) {
-      this.clearInterval(2) // 立即结束上一个滚动事务
+      this.clearInterval() // 立即结束上一个滚动事务
       //节点距离可视区间底部小于0（溢出可视区间下边界），执行滚动动作
       let Node2HorizonBottomAbs = Math.abs(Node2HorizonBottom) // 计算溢出的距离（取绝对值）
       let rollSpeed = Math.round((Node2HorizonBottomAbs + overflowBottomReservedZone) / (30 / overflowBottomRollSpeed)) // 基于溢出的距离(加预留区高度)计算滚动速率
@@ -534,13 +546,13 @@ export class Player {
         Node2HorizonBottomAbs -= rollSpeed
         // 默认滚动后，给底部预留 100 px 的距离
         if (Node2HorizonBottomAbs < -overflowBottomReservedZone) {
-          this.clearInterval(2.2)
+          this.clearInterval()
           return
         }
       }, 10)
       // this.applyNativeScroll(el, container, scroller) // 原生滚动模式
     } else if (Node2HorizonBottom < 200 && Node2HorizonBottom > 0) {
-      this.clearInterval(3) // 立即结束上一个滚动事务
+      this.clearInterval() // 立即结束上一个滚动事务
       //设置当节点距离可视区间底部小于200时，执行动作
       let sum = 0 // 滚动累计量
       this.scrollTimer = setInterval(() => {
@@ -548,13 +560,13 @@ export class Player {
         sum += 10 * commonRollSpeed
         // 默认滚动后，给底部预留 300 px 的空间
         if (sum > commonReservedZone) {
-          this.clearInterval(3.3)
+          this.clearInterval()
           return
         }
       }, 20)
     } else {
       //排除上述三种情况以后，执行动作
-      this.clearInterval(4)
+      this.clearInterval()
       return
     }
     /* 对特定动画元素的测试代码
@@ -566,8 +578,31 @@ export class Player {
     */
   }
 
-  private clearInterval(num?: number) {
-    // console.log(num)
+  /** 翻页播放模式（待开发） */
+  private applyFilpPlay(el: HTMLElement, container: HTMLElement, scroller: HTMLElement) {
+    this.applyAnime(el.dataset.effect!, el)
+  }
+
+  /** 应用翻页（待开发） */
+  private applyFlip(args: {
+    /** 播放中的动画元素 */
+    el: HTMLElement
+    /** 滚动层 */
+    scroller: HTMLElement
+    /** 容器层 */
+    container: HTMLElement
+  }) {
+    const { el, scroller, container } = args
+    const Horizon = scroller.clientHeight // 可视窗口的高度
+    const Scrolled = scroller.scrollTop // 已滚动高度
+    const Node2Top = getTopDistance(el) - container.offsetTop // 节点距离文档顶部（指节点的上边界至文档顶部
+    const NodeHeight = el.clientHeight // 元素自身的高度
+    const Node2HorizonBottom = Horizon + Scrolled - Node2Top - NodeHeight //节点距离可视区间底部
+  }
+
+  /** 立即取消当前滚动事务 */
+  private clearInterval() {
+    // 当两个滚动事务同时存在的时候可能会出现相互拉扯的情况，所以要确保同一时间只有一个事务
     clearInterval(this.scrollTimer)
   }
 
@@ -587,21 +622,34 @@ export class Player {
     }, 0)
   }
 
-  /** 将数据解析成播放所需数据 */
+  /** 将片段数据解析成播放所需数据 */
   parseData(data: {
     audio: string
     duration: number
     promoters: Array<string | null>
+    timestamps: Array<number>
   }): CourseData {
-    const { audio, duration, promoters } = data
-    const section = duration / promoters.length // 切片时长
+    const { audio, duration, promoters, timestamps } = data
     const keyframeSequence: number[] = []
-    const promoterSequence = promoters.filter((item, index) => {
-      if (item !== null) {
-        keyframeSequence.push(_.round(section * index, 3))
-        return item
-      }
-    }) as string[]
+    let promoterSequence: string[] = []
+    // 存在时间戳的情况
+    if (timestamps.length > 0 && timestamps.length === promoters.length) {
+      promoterSequence = promoters.filter((item, index) => {
+        if (item !== null) {
+          keyframeSequence.push(timestamps[index])
+          return item
+        }
+      }) as string[]
+    } else {
+      const section = duration / promoters.length // 切片时长
+      promoterSequence = promoters.filter((item, index) => {
+        if (item !== null) {
+          keyframeSequence.push(Number((section * index).toFixed(3)))
+          return item
+        }
+      }) as string[]
+    }
+
     return { audio, duration, promoterSequence, keyframeSequence }
   }
 
@@ -616,6 +664,12 @@ export class Player {
     const formattedSeconds = String(seconds).padStart(2, '0');
 
     return `${hours ? formattedHours + ':' : ''}${formattedMinutes}:${formattedSeconds}`;
+  }
+
+  destory() {
+    this.stop()
+    this.init()
+    this.subs.forEach(sub => sub.unsubscribe())
   }
 }
 /**

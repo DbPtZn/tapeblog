@@ -1,7 +1,7 @@
 // import { Caret, CaretLimit } from '@textbus/browser'
 // import { ContainerEventPlugin, CustomToolbar, InlineToolbarPlugin, OutlinesPlugin, outlineExpandTool } from '@/editor'
 // import { CustomToolbar, InlineToolbarPlugin, OutlinePlugin, ResizeService, outlineCollapseTool, OutlineService } from '@/editor'
-import { AnimeProvider, ConfigProvider, Controller, Player, ThemeController, animeIgnoreComponent, animeIgnoreComponentLoader, animePlayerComponent, animePlayerComponentLoader, animePlayerFormatLoader, animePlayerFormatter, forwardTool, replayTool, rewindTool, speedDownTool, speedUpTool, startTool, stopTool, textBackgroundColorFormatLoader, textBackgroundColorFormatter, volumeDownTool, volumeUpTool } from '@/editor'
+import { AnimeProvider, ConfigProvider, Controller, Player, PlayerContextMenuPlugin, Structurer, ThemeProvider, animeIgnoreComponent, animeIgnoreComponentLoader, animePlayerComponent, animePlayerComponentLoader, animePlayerFormatLoader, animePlayerFormatter, forwardTool, replayTool, rewindTool, speedDownTool, speedUpTool, startTool, stopTool, textBackgroundColorFormatLoader, textBackgroundColorFormatter, volumeDownTool, volumeUpTool } from '@/editor'
 import { fromEvent, Injector } from '@textbus/core'
 import {
   boldTool,
@@ -31,12 +31,14 @@ import { CaretLimit, Input } from '@textbus/platform-browser'
 import { CustomThemeCommonVars, ThemeCommonVars } from 'naive-ui'
 
 export function getProductConfig(args: {
-  scrollerRef: HTMLElement,
-  controllerRef: HTMLElement,
-  layoutRef: HTMLElement,
-  content: string
+  rootRef: HTMLElement,
+  editorRef: HTMLElement,
+  scrollerRef: HTMLElement, 
+  toolbarRef?: HTMLElement,
+  controllerRef?: HTMLElement,
+  content?: string
 }) {
-  const { scrollerRef, controllerRef, layoutRef, content } = args
+  const { rootRef, editorRef, scrollerRef, toolbarRef, controllerRef, content } = args
   const config: EditorOptions = {
     theme: 'darkline',
     autoFocus: true,
@@ -54,10 +56,10 @@ export function getProductConfig(args: {
     providers: [ConfigProvider, Player, AnimeProvider],
     plugins: [
       () => new LinkJumpTipPlugin(),
-      () => new ThemeController(),
+      () => new PlayerContextMenuPlugin(),
       new Controller(
         [speedDownTool, rewindTool, startTool, forwardTool, speedUpTool, replayTool, stopTool, volumeUpTool, volumeDownTool],
-        controllerRef
+        controllerRef!
         // autoHideController
       )
     ],
@@ -77,11 +79,21 @@ export function getProductConfig(args: {
         }
       })
       /** 配置服务依赖 */
-      const configProvider = injector.get(ConfigProvider)
-      configProvider.setup(injector, { scrollerRef })
+      // 主题依赖
+      const themeProvider = injector.get(ThemeProvider)
+      themeProvider.setup(injector)
+      // 组成元素
+      const structurer = injector.get(Structurer)
+      structurer.setup({
+        rootRef,
+        scrollerRef,
+        toolbarRef,
+        editorRef,
+        controllerRef
+      })
       /** 播放器依赖注入 */
       const player = injector.get(Player)
-      player.setup(injector, scrollerRef, layoutRef)
+      player.setup(injector, scrollerRef)
     }
   }
   return config

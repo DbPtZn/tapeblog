@@ -1,12 +1,17 @@
-import { FormatValue, Formatter, VElement, VTextNode } from '@textbus/core'
-import { MatchRule, Matcher, inlineTags } from '@textbus/editor'
-import { FormatLoader } from '@textbus/platform-browser'
-import { rgbaToHex } from './utils/_api'
+import { FormatValue, Formatter, VElement, VTextNode } from "@textbus/core"
+import { MatchRule, Matcher, inlineTags } from "@textbus/editor"
+import { FormatLoader } from "@textbus/platform-browser"
+import { rgbaToHex } from "./utils"
+
+
+
 
 export class TextBackgroundColorFormatter implements Formatter<any> {
   columned = true
   priority = 0
-  constructor(public name: string, public styleName: string) {}
+  constructor(public name: string,
+              public styleName: string) {
+  }
 
   render(children: Array<VElement | VTextNode>, formatValue: string): VElement {
     if (children.length === 1 && children[0] instanceof VElement) {
@@ -19,25 +24,19 @@ export class TextBackgroundColorFormatter implements Formatter<any> {
         }
       }
     }
-    return new VElement(
-      'span',
-      {
-        'data-bgcolor': rgbaToHex(formatValue),
-        style: {
-          [this.styleName]: rgbaToHex(formatValue)
-        }
-      },
-      children
-    )
+    return new VElement('span', {
+      'data-bgcolor': rgbaToHex(formatValue),
+      style: {
+        [this.styleName]: rgbaToHex(formatValue)
+      }
+    }, children)
   }
 }
 
 export const textBackgroundColorFormatter = new TextBackgroundColorFormatter('textBackgroundColor', 'backgroundColor')
 
-export class InlineTagStyleFormatLoader<T extends FormatValue>
-  extends Matcher<T, Formatter<any>>
-  implements FormatLoader<any>
-{
+
+export class InlineTagStyleFormatLoader<T extends FormatValue> extends Matcher<T, Formatter<any>> implements FormatLoader<any> {
   constructor(public styleName: string, formatter: Formatter<any>, rule: MatchRule, public forceMatchTags = false) {
     super(formatter, rule)
   }

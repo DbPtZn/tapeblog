@@ -9,15 +9,12 @@ import {
   defineComponent,
   onBreak,
   useContext,
-  useSelf,
   useSlots,
-  useState,
   Selection,
   onContentInsert
 } from '@textbus/core'
-import { paragraphComponent } from '@textbus/editor'
 import { ComponentLoader, SlotParser } from '@textbus/platform-browser'
-// import { paragraphComponent } from './paragraph.component'
+import { paragraphComponent } from './paragraph.component'
 
 // TODO 折叠功能： 可以将该组件的高度设置为0px, 具体参考UI组件中的折叠组件。
 
@@ -46,7 +43,7 @@ export const animeIgnoreComponent = defineComponent({
         ev.preventDefault()
       }
     })
-    onBreak(ev => {
+    onBreak((ev) => {
       const p = paragraphComponent.createInstance(injector)
       const slot = slots.get(0)!
       slot.insert(p)
@@ -54,9 +51,7 @@ export const animeIgnoreComponent = defineComponent({
       ev.preventDefault()
     })
     /** 插槽 */
-    const slots = useSlots(
-      initData?.slots || [new Slot([ContentType.Text, ContentType.InlineComponent, ContentType.BlockComponent])]
-    )
+    const slots = useSlots(initData?.slots || [new Slot([ContentType.Text, ContentType.InlineComponent, ContentType.BlockComponent])])
     const slot = slots.get(0)
 
     return {
@@ -65,13 +60,21 @@ export const animeIgnoreComponent = defineComponent({
           <anime-ignore>
             <span
               class={'anime-ignore-btn'}
-              onClick={ev => {
+              onClick={(ev) => {
                 const target = ev.target as HTMLElement
                 if (target.parentElement?.classList.contains('anime-ignore-collapse')) {
                   target.parentElement?.classList.remove('anime-ignore-collapse')
+                  // target.parentElement?.classList.add('anime-ignore-expand')
                 } else {
                   target.parentElement?.classList.add('anime-ignore-collapse')
                 }
+                // else if (target.parentElement?.classList.contains('anime-ignore-expand')) {
+                //   target.parentElement?.classList.remove('anime-ignore-expand')
+                //   target.parentElement?.classList.add('anime-ignore-collapse')
+                // }
+                // self.updateState(draft => {
+                //   draft.collapse = !draft.collapse
+                // })
               }}
             />
             {slotRender(slot!, children => {

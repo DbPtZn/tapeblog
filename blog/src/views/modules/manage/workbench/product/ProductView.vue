@@ -13,18 +13,24 @@ const { productStore } = useStore('manage')
 const scrollerRef = ref()
 const controllerRef = ref()
 const editorRef = ref()
-const layoutRef = ref()
+const rootRef = ref()
 const props = defineProps<{
   id: string
 }>()
-useEditor(props.id, editorRef, scrollerRef, controllerRef, layoutRef)
+useEditor({
+  id: props.id,
+  rootRef: rootRef,
+  editorRef: editorRef,
+  scrollerRef: scrollerRef,
+  controllerRef: controllerRef
+})
 onMounted(() => {
   console.log(productStore.get(props.id))
 })
 </script>
 
 <template>
-  <div class="product" ref="layoutRef">
+  <div class="product" ref="rootRef">
     <n-card :bordered="false">
       <div ref="scrollerRef" class="product-scroller" >
         <!-- 文章头部 -->

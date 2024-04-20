@@ -1,7 +1,7 @@
 import { FormatHostBindingRender, VElement, VTextNode, Formatter } from '@textbus/core'
 import { MatchRule, Matcher } from '@textbus/editor'
 import { FormatLoader } from '@textbus/platform-browser'
-import { rgbaToHex } from './utils/_api'
+import { rgbaToHex } from './utils'
 
 class ColorFormatter implements Formatter<any> {
   columned = false
@@ -21,26 +21,6 @@ class ColorFormatter implements Formatter<any> {
   }
 }
 export const colorFormatter = new ColorFormatter('color')
-
-// function createOuterStyleFormatter(styleName: string, config: { columned?: boolean, inheritable?: boolean, priority?: number} = { columned: false, inheritable: true, priority: 0 }) {
-//   const { columned, inheritable, priority } = config
-//   return new Formatter<string>(styleName, {
-//     columned,
-//     inheritable,
-//     priority,
-//     render(children, formatValue, renderEnv): FormatHostBindingRender {
-//       return {
-//         fallbackTagName: 'span',
-//         attach: (host: VElement) => {
-//           host.styles.set('color', rgbaToHex(formatValue))
-//           host.attrs.set('data-color', rgbaToHex(formatValue))
-//         }
-//       }
-//     }
-//   })
-// }
-
-// export const colorFormatter = createOuterStyleFormatter('color')
 
 class ColorFormatLoader extends Matcher<any, Formatter<any>> implements FormatLoader<any> {
   constructor(formatter: Formatter<any>) {
@@ -74,3 +54,22 @@ class ColorFormatLoader extends Matcher<any, Formatter<any>> implements FormatLo
 }
 export const colorFormatLoader = new ColorFormatLoader(colorFormatter)
 
+// function createOuterStyleFormatter(styleName: string, config: { columned?: boolean, inheritable?: boolean, priority?: number} = { columned: false, inheritable: true, priority: 0 }) {
+//   const { columned, inheritable, priority } = config
+//   return new Formatter<string>(styleName, {
+//     columned,
+//     inheritable,
+//     priority,
+//     render(children, formatValue, renderEnv): FormatHostBindingRender {
+//       return {
+//         fallbackTagName: 'span',
+//         attach: (host: VElement) => {
+//           host.styles.set('color', rgbaToHex(formatValue))
+//           host.attrs.set('data-color', rgbaToHex(formatValue))
+//         }
+//       }
+//     }
+//   })
+// }
+
+// export const colorFormatter = createOuterStyleFormatter('color')

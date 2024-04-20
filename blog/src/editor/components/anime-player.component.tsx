@@ -16,12 +16,10 @@ import {
   Injector
 } from '@textbus/core'
 import { ComponentLoader, SlotParser } from '@textbus/platform-browser'
-import { ANIME_COMPONENT, ANIME_COMPONENT_NAME } from '..'
-export interface AnimeInfo {
-  id: string
-  effect: string
-  serial: string
-}
+import {
+  ANIME_COMPONENT,
+  ANIME_COMPONENT_NAME,
+} from '@/editor'
 
 export const animePlayerComponent = defineComponent({
   type: ContentType.BlockComponent,
@@ -29,12 +27,11 @@ export const animePlayerComponent = defineComponent({
   setup(initData?: ComponentInitData<any, any>) {
     const injector = useContext()
     const commander = injector.get(Commander)
-    // const animeService = injector.get(AnimeService)
     const componentInstance = useSelf()
     /** 插槽 */
     const slots = useSlots(initData!.slots!)
     const slot = slots.get(0)
-    onContentDeleted(ev => {
+    onContentDeleted((ev) => {
       /** 插槽中的组件删除后如果插槽为空，则移除动画组件 */
       if (slot?.sliceContent()[0] === '\n') {
         commander.removeComponent(componentInstance)
@@ -49,21 +46,11 @@ export const animePlayerComponent = defineComponent({
       dataState: ''
     }
     const animeController = useState(state)
-    animeController.onChange.subscribe(newData => {
+    animeController.onChange.subscribe((newData) => {
       state = newData
     })
-    /** AnimeStateProvider for State Control and Check */
-    // const animeStateProvider = useContext(AnimeStateProvider)
-    // const animeActiveEvent = animeStateProvider.onAnimeActive.subscribe((args) => {
-    //   const { dataId, dataState } = args
-    //   if (state.dataId === dataId) {
-    //     animeController.update((draft) => {
-    //       draft.dataState = dataState
-    //     })
-    //   }
-    // })
     onDestroy(() => {
-      // animeActiveEvent.unsubscribe()
+      //
     })
     return {
       render(slotRender: SlotRender): VElement {
@@ -79,33 +66,8 @@ export const animePlayerComponent = defineComponent({
               class={'anime-component-tab'}
               title={state.dataTitle}
               data-serial={state.dataSerial}
-              onClick={() => {
-                // const info: AnimeInfo = {
-                //   id: state.dataId || '',
-                //   effect: state.dataEffect || '',
-                //   serial: state.dataSerial || ''
-                // }
-                // 点击选中动画
-                // animeService.handleSelectAnime(info)
-              }}
-              // onContextmenu={(event) => {
-              //   event.preventDefault() // 阻止默认事件
-              //   event.stopPropagation() // 阻止事件冒泡
-              //   // animeService.handleAnimeContextmenu({
-              //   //   component: componentInstance,
-              //   //   event
-              //   // })
-              // }}
-              // onMouseenter={(ev) => {
-              //   const target = ev.target as HTMLElement
-              //   target.parentElement?.classList.add('anime-component-evoke')
-              // }}
-              // onMouseleave={(ev) => {
-              //   const target = ev.target as HTMLElement
-              //   target.parentElement?.classList.remove('anime-component-evoke')
-              // }}
             />
-            {slotRender(slot!, children => {
+            {slotRender(slot!, (children) => {
               return <div class={'anime-component-content'}>{children}</div>
             })}
           </anime-component>
@@ -116,51 +78,6 @@ export const animePlayerComponent = defineComponent({
 })
 
 export const animePlayerComponentLoader: ComponentLoader = {
-  resources: {
-    styles: [``],
-    editModeStyles: [
-      `
-    .anime-component-evoke {
-      display: block;
-      outline: 1px dashed #aaaaaa30;
-    }
-    // .anime-component-tab:after {
-    //   z-index: 0;
-    //   content: attr(data-serial);
-    //   vertical-align: super;
-    //   position: absolute;
-    //   top: -10px;
-    //   right: 0;
-    //   display:inline-block;
-    //   width:23px;
-    //   height:23px;
-    //   font-size:15px;
-    //   color:white;
-    //   text-align:center;
-    //   line-height:23px;
-    //   border-radius:24px;
-    //   background-color:#c8c9cc;
-    //   box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);
-    //   pointer-events: auto;
-    // }
-    // .anime-component-tab:hover:after {
-    //   cursor: pointer;
-    //   animation: .8s .5s tada infinite;
-    // }
-    // .anime-component-tab:hover {
-    //   box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);
-    //   border-radius: 3px;
-    // }
-    // .anime-component-tab {
-    //   position: relative;
-    //   display: block;
-    // }
-    // [data-state="active"]:after { 
-    //   background-color:pink 
-    // }
-    `
-    ]
-  },
   match(element: HTMLElement): boolean {
     return element.tagName.toLowerCase() === ANIME_COMPONENT
   },

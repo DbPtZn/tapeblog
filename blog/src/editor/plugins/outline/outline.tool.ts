@@ -1,30 +1,30 @@
-// import { OutlineService } from './outline.service'
-// import { Injector } from '@textbus/core'
-// import { OutlineButtonTool, OutlineButtonToolConfig } from './utils/outlineButton-tool'
-// import { SwitchButtonState, SwitchButtonTool, SwitchButtonToolConfig } from '../toolbar/_api'
-// import { MaterialTypeEnum } from '../..'
+import { OutlineService } from './outline.service'
+import { Injector } from '@textbus/core'
+import { OutlineButtonTool, OutlineButtonToolConfig } from './utils/outlineButton-tool'
+import { SwitchButtonState, SwitchButtonTool, SwitchButtonToolConfig } from '../toolbar'
+import { MaterialTypeEnum } from '../..'
 
-// export function outlineToolConfigFactory(injector: Injector, updateState: (state: SwitchButtonState) => void): SwitchButtonToolConfig {
-//   const outlineService = injector.get(OutlineService)
-//   return {
-//     iconClasses: [`${MaterialTypeEnum.FILLED}view_sidebar`],
-//     tooltip: '大纲视图',
-//     // label: '大纲视图',
-//     keymap: {
-//       ctrlKey: true,
-//       key: ';'
-//     },
-//     onClick() {
-//       outlineService.handleExpand()
-//       updateState({
-//         highlight: outlineService.isExpanded
-//       })
-//     }
-//   }
-// }
-// export function outlineTool() {
-//   return new SwitchButtonTool(outlineToolConfigFactory)
-// }
+export function outlineToolConfigFactory(injector: Injector, updateState: (state: SwitchButtonState) => void): SwitchButtonToolConfig {
+  const outlineService = injector.get(OutlineService)
+  return {
+    iconClasses: [`${MaterialTypeEnum.FILLED}view_sidebar`],
+    tooltip: '大纲视图',
+    // label: '大纲视图',
+    keymap: {
+      ctrlKey: true,
+      key: ';'
+    },
+    onClick() {
+      outlineService.handleExpand()
+      updateState({
+        highlight: outlineService.isExpanded
+      })
+    }
+  }
+}
+export function outlineTool() {
+  return new SwitchButtonTool(outlineToolConfigFactory)
+}
 
 
 // class OutlineCollapseTool {

@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { FractalContainer, useRendererStore, useShell } from '@/renderer'
+import { FractalContainer, useRenderer, useShell } from '@/renderer'
 import { onMounted, ref, watch } from 'vue'
 import useStore from '@/store'
 import { ManagerShell, managerShell } from '@/views'
 import { onUnmounted } from 'vue'
 const { collectionStore, userStore } = useStore('manage')
-const rendererStore = useRendererStore()
+const rendererStore = useRenderer()
 rendererStore.set(managerShell)
 const shell = useShell<ManagerShell>()
 const implementRef = ref<HTMLElement>()
